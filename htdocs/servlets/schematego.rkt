@@ -1,4 +1,7 @@
-#lang web-server/insta
+#lang racket
+
+(require web-server/servlet)
+(provide/contract (start (request? . -> . response/c)))
 
 (require web-server/private/url-param)
 (require "model.ss")
@@ -168,15 +171,14 @@
       (content "text/html; charset=utf-8")))
     (link
      ((rel "stylesheet")
-      (href "/schematego/css/base.css")
+      (href "/css/base.css")
       (type "text/css")
       (media "screen")))
     (title "Schematego")))
 
 (define (render-user-message-box umsg)
   `(div
-    ((id "messages"))
-    (h2 "Messages")
+    ((id "messages")) (h2 "Messages")
     ,umsg))
 
 (define (render-main-page request umsg)
@@ -197,3 +199,14 @@
 (define (start request)
   (init-board)
   (render-main-page request "Welcome!"))
+
+(require web-server/servlet-env)
+(serve/servlet start
+               #:launch-browser? #f
+               #:quit? #f
+               #:listen-ip #f
+               #:port 8000
+               #:extra-files-paths
+               (list (build-path "/home/cortex/ws/schematego/src/scheme" "htdocs"))
+               #:servlet-path
+               "/servlets/schematego.rkt")
