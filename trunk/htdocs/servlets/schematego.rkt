@@ -4,10 +4,13 @@
 (provide/contract (start (request? . -> . response/c)))
 
 (require web-server/private/url-param)
+(require "utils.rkt")
 (require "model.ss")
 
 (define board (make-board 10 10))
+
 (define (make-pawns)
+  (define meta-pwn (make-meta-pawn))
   (define names 
     '(marshal general colonel major captain lieutenant sergeant miner scout 
               spy bomb flag))
@@ -17,7 +20,7 @@
   (define rules (map (lambda (_) (lambda () #t)) names))
   (map
    (lambda (color name rank pos rule)
-     (make-pawn color name rank pos rule))
+     ((meta-pwn 'new) color name rank pos rule))
    colors names ranks positions rules))
 
 (define pawns (make-pawns))
@@ -110,9 +113,7 @@
         (and (eq? x x-lake)
              (eq? y y-lake)))
       x-lakes y-lakes)))
-  (define (in-range? n lower upper)
-    (and (>= n lower)
-         (<= n upper)))
+  
   (define (red? x y)
     (and (in-range? x 0 9)
          (in-range? y 0 3)))
@@ -207,6 +208,9 @@
                #:listen-ip #f
                #:port 8000
                #:extra-files-paths
-               (list (build-path "/home/cortex/ws/schematego/src/scheme" "htdocs"))
+               (list 
+                (build-path 
+                 (find-system-path 'home-dir)
+                 "ws/schematego/htdocs"))
                #:servlet-path
                "/servlets/schematego.rkt")
