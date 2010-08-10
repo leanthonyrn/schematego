@@ -1,13 +1,8 @@
 #lang scheme
 
-(define (vector-map! v f)
-  (define last (- (vector-length v) 1))
-  (let loop
-    ((i 0))
-    (vector-set! v i (f i (vector-ref v i)))
-    (unless (>= i last)
-      (loop (+ i 1))))
-  v)
+(require "utils.rkt")
+
+(define dbg (make-debugger 1))
 
 (define (make-board cols rows)
   (let ((self '())
@@ -91,10 +86,13 @@
          (error "Unknown message" msg))))
     (init)))
 
-(define (make-pawn color name rank position rule)
+(define (make-pawn color name rank position rule . args)
   (define self '())
+  (define meta '())
   (define (init)
     (set! self dispatch-pawn)
+    (when (not (null? args))
+      (set! meta (car args)))
     self)
   (define (position! new-pos callback)
     (set! position new-pos)
@@ -107,6 +105,7 @@
       ((position!) position!)
       ((name) name)
       ((rank) rank)
+      ((meta) meta)
       (else
        (error "Unknown message to dispatch-pawn" msg))))
   (init))
@@ -130,9 +129,28 @@
        (error "Unknown message:" msg))))
   (init))
 
+(define (make-meta-pawn)
+  (define self '())
+  (define pwns '())
+  (define (init)
+    (set! self dispatch-meta-pawn)
+    self)
+  (define (new color name rank position rule)
+    (define new-pwn (make-pawn color name rank position rule self))
+    (dbg 'new-meta-pawn (dbg-obj 'test 12) (dbg-obj'pawns 14) pwns)
+    (set! pwns (cons new-pwn pwns))
+    new-pwn)
+  (define (dispatch-meta-pawn msg)
+    (case msg
+      ((new) new)
+      (else
+       (error "Unknown message: " msg))))
+  (init))
+
 (provide
  make-board
  make-space
  make-pawn
  make-point
+ make-meta-pawn
  )
