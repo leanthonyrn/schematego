@@ -202,15 +202,16 @@
   (render-main-page request "Welcome!"))
 
 (require web-server/servlet-env)
-(serve/servlet start
-               #:launch-browser? #f
-               #:quit? #f
-               #:listen-ip #f
-               #:port 8000
-               #:extra-files-paths
-               (list 
-                (build-path 
-                 (find-system-path 'home-dir)
-                 "ws/schematego/htdocs"))
-               #:servlet-path
-               "/servlets/schematego.rkt")
+(serve/servlet 
+ start
+ #:launch-browser? #f
+ #:quit? #f
+ #:listen-ip #f
+ #:port 8000
+ #:extra-files-paths
+ (list 
+  (build-path 
+   (find-system-path 'home-dir)
+   "ws/schematego/htdocs"))
+ #:servlet-path
+ "/servlets/schematego.rkt")
