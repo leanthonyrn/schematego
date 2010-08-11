@@ -2,7 +2,7 @@
 
 (require "utils.rkt")
 
-(define *dbg-obj-handlers* '())
+(define *initial-dbg-obj-handlers* '())
 
 (define (dbg-obj-payload payload)
   (define self '())
@@ -155,8 +155,9 @@
   ;; pushed to be used for that payload.
   ;;
   ;; Please use the add-handler! message to add custom handlers. An initial
-  ;; list of handlers is provided by the '*dbg-obj-handlers*' global variable.
-  ;; But there's no need to mutate that variable for adding custom handlers.
+  ;; list of handlers is provided by the '*initial-dbg-obj-handlers*' 
+  ;; global variable, though there's no need to mutate that variable 
+  ;; in order to add custom handlers.
   ;;
   ;; You could alter the handler election policy --since multiple handlers
   ;; might support a given payload-- by providing a custom selector 
@@ -177,7 +178,7 @@
 
   (define (init)
     (set! self dispatch-dbg-obj)
-    (set! handlers *dbg-obj-handlers*)
+    (set! handlers *initial-dbg-obj-handlers*)
     (set! selector default-selector)
     (set! payload (dbg-obj-payload args))
     (cond 
@@ -283,7 +284,7 @@
 ;; ------------------------------------------------------------------------
 
 (set! 
- *dbg-obj-handlers*
+ *initial-dbg-obj-handlers*
  (list 
   key-val-dbg-obj
   list-proc-dbg-obj))
@@ -292,4 +293,8 @@
 ;; ------------------------------------------------------------------------
 (provide
  make-debugger
- dbg-obj)
+ dbg-obj
+ default-dbg-obj
+ key-val-dbg-obj
+ list-proc-dbg-obj
+ process-dbg-obj-args)
