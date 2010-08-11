@@ -4,6 +4,100 @@
 
 (define *initial-dbg-obj-handlers* '())
 
+(define (dbg-obj . args)
+  ;; Each debug object handler must extend this abstraction by implementing
+  ;; two messages, i.e. qualifier and formatter. The handler must return 
+  ;; thunks as a response to these messages. Unknown messages should be
+  ;; delegated to this abstraction, which is available to specialized debug
+  ;; object handlers as the second argument when they are instantiated. The
+  ;; first argument is the payload that might or might not be supported
+  ;; by one or more handlers.
+  ;; 
+  ;; In case no handler supports a given payload, a default handler is 
+  ;; pushed to be used for that payload.
+  ;;
+  ;; Please use the add-handler! message to add custom handlers. An initial
+  ;; list of handlers is provided by the '*initial-dbg-obj-handlers*' 
+  ;; global variable, though there's no need to mutate that variable 
+  ;; in order to add custom handlers.
+  ;;
+  ;; You could alter the handler election policy --since multiple handlers
+  ;; might support a given payload-- by providing a custom selector 
+  ;; procedure. A priori, a default is provided by this very abstraction.
+  ;; The selector procedure receives two arguments:
+  ;;
+  ;; (1) A list of available handlers and,
+  ;; (2) A mask list that has as many elements as the first argument.
+  ;;
+  ;; The values in the second argument indicate whether a particular 
+  ;; handler --same position in the first argument-- handles the
+  ;; payload that's being processed.
+  
+  (define self '())
+  (define handlers '())
+  (define selector '())
+  (define payload '())
+
+  (define (init)
+    (set! self dispatch-dbg-obj)
+    (set! handlers *initial-dbg-obj-handlers*)
+    (set! selector default-selector)
+    (set! payload (dbg-obj-payload args))
+    (cond 
+      ((null? args)
+       self)
+      (else
+       (let* 
+           ((handler-instances '())
+            (handler-qualification-mask
+             (map
+              (lambda (handler)
+                (let ((handler-instance (handler payload self)))
+                  (set! handler-instances 
+                        (cons handler-instance handler-instances))
+                  ((handler-instance 'qualifier))))
+              handlers))
+            (elected-handler
+             (selector 
+              (reverse handler-instances) 
+              handler-qualification-mask)))
+         (cond 
+           ((and (not (null? elected-handler))
+                 (procedure? elected-handler)
+                 (elected-handler 'dbg-obj?))
+            elected-handler)
+           (else
+            (default-dbg-obj payload self)))))))
+  
+  (define (default-selector handlers handler-qualification-mask)
+    ;; Choose the first qualifying handler
+    (define selected-handler '())
+    (for-each 
+     (lambda (handler qualified?)
+       (when (true? qualified?)
+         (set! selected-handler handler)))
+     handlers 
+     handler-qualification-mask)
+    selected-handler)
+  
+  (define (selector! new-selector)
+    (set! selector new-selector))
+  
+  (define (add-handler! handler . for-extensibility)
+    (when (not (procedure? handler))
+      (error "A debug object handler must be a procedure"))
+    (set! handlers (cons handler handlers)))
+  
+  (define (dispatch-dbg-obj msg)
+    (case msg
+      ((dbg-obj?) #t)
+      ((payload) payload)
+      ((add-handler!) add-handler!)
+      ((handler-selector!) selector!)
+      (else
+       (error "Unknow message" msg))))
+  (init))
+
 (define (dbg-obj-payload payload)
   (define self '())
   (define (init)
@@ -140,100 +234,6 @@
       ((formatter) formatter)
       (else
        (usual msg))))
-  (init))
-
-(define (dbg-obj . args)
-  ;; Each debug object handler must extend this abstraction by implementing
-  ;; two messages, i.e. qualifier and formatter. The handler must return 
-  ;; thunks as a response to these messages. Unknown messages should be
-  ;; delegated to this abstraction, which is available to specialized debug
-  ;; object handlers as the second argument when they are instantiated. The
-  ;; first argument is the payload that might or might not be supported
-  ;; by one or more handlers.
-  ;; 
-  ;; In case no handler supports a given payload, a default handler is 
-  ;; pushed to be used for that payload.
-  ;;
-  ;; Please use the add-handler! message to add custom handlers. An initial
-  ;; list of handlers is provided by the '*initial-dbg-obj-handlers*' 
-  ;; global variable, though there's no need to mutate that variable 
-  ;; in order to add custom handlers.
-  ;;
-  ;; You could alter the handler election policy --since multiple handlers
-  ;; might support a given payload-- by providing a custom selector 
-  ;; procedure. A priori, a default is provided by this very abstraction.
-  ;; The selector procedure receives two arguments:
-  ;;
-  ;; (1) A list of available handlers and,
-  ;; (2) A mask list that has as many elements as the first argument.
-  ;;
-  ;; The values in the second argument indicate whether a particular 
-  ;; handler --same position in the first argument-- handles the
-  ;; payload that's being processed.
-  
-  (define self '())
-  (define handlers '())
-  (define selector '())
-  (define payload '())
-
-  (define (init)
-    (set! self dispatch-dbg-obj)
-    (set! handlers *initial-dbg-obj-handlers*)
-    (set! selector default-selector)
-    (set! payload (dbg-obj-payload args))
-    (cond 
-      ((null? args)
-       self)
-      (else
-       (let* 
-           ((handler-instances '())
-            (handler-qualification-mask
-             (map
-              (lambda (handler)
-                (let ((handler-instance (handler payload self)))
-                  (set! handler-instances 
-                        (cons handler-instance handler-instances))
-                  ((handler-instance 'qualifier))))
-              handlers))
-            (elected-handler
-             (selector 
-              (reverse handler-instances) 
-              handler-qualification-mask)))
-         (cond 
-           ((and (not (null? elected-handler))
-                 (procedure? elected-handler)
-                 (elected-handler 'dbg-obj?))
-            elected-handler)
-           (else
-            (default-dbg-obj payload self)))))))
-  
-  (define (default-selector handlers handler-qualification-mask)
-    ;; Choose the first qualifying handler
-    (define selected-handler '())
-    (for-each 
-     (lambda (handler qualified?)
-       (when (true? qualified?)
-         (set! selected-handler handler)))
-     handlers 
-     handler-qualification-mask)
-    selected-handler)
-  
-  (define (selector! new-selector)
-    (set! selector new-selector))
-  
-  (define (add-handler! handler . for-extensibility)
-    (when (not (procedure? handler))
-      (error "A debug object handler must be a procedure"))
-    (set! handlers (cons handler handlers)))
-  
-  (define (dispatch-dbg-obj msg)
-    (case msg
-      ((dbg-obj?) #t)
-      ((payload) payload)
-      ((add-handler!) add-handler!)
-      ((handler-selector!) selector!)
-      (else
-       (error "Unknow message" msg))))
   (init))
 
 (define (make-debugger level)
