@@ -18,7 +18,53 @@
        (error "Unknown message" msg))))
   (init))
 
-(define (dbg-key-val-obj . args)
+(define (process-dbg-obj-args args)
+  (define common-error 
+    (string-append 
+     "Either 0 or 3 arguments must be provided.\n"
+     "If any argument is passed to a debug object, "
+     "the argument list MUST have the following structure:\n"
+     "an instance of dbg-obj-payload as payload, followed by:\n"
+     "an instance of dbg-obj as parent (or usual), followed by:\n"
+     "an instance of continuation? as abort.\n\n"))
+  (cond 
+    ((and (not (null? args))
+          (procedure? (car args))
+          ((car args) 'dbg-obj-payload?))
+     (let ((payload ((car args) 'as-list)))
+       (when (null? (cdr args))
+         (error common-error "The second argument is missing.\n"))
+       (let ((parent (cadr args)))
+         (list payload parent))))
+    (else
+     (list null null null))))
+
+(define (default-dbg-obj . args)
+  (define self '())
+  (define payload '())
+  (define usual '())
+  
+  (define (init)
+    (let ((structured-args (process-dbg-obj-args args)))
+      (set! payload (car structured-args))
+      (set! usual (cadr structured-args)))
+    (set! self dispatch-default-dbg-obj)
+    self)
+  
+  (define (qualifier) #t)
+  (define (formatter)
+    (gentext-println payload))
+  
+  (define (dispatch-default-dbg-obj msg)
+    (case msg
+      ((default-dbg-obj?) #t)
+      ((qualifier) qualifier)
+      ((formatter) formatter)
+      (else
+       (usual msg))))
+  (init))
+
+(define (key-val-dbg-obj . args)
   (define self '())
   (define payload '())
   (define usual '())
@@ -26,33 +72,29 @@
   (define val '())
   
   (define (init)
-    (when (and (not (null? args))
-               (procedure? (car args)))
-      (when ((car args) 'dbg-obj-payload?)
-        (set! payload ((car args) 'as-list))
-        (when (not (null? (cdr args)))
-          (set! usual (cadr args)))
-        (set! key (car payload))
-        (set! val (cadr payload))))
-    (set! self dispatch-dbg-key-val-obj)
+    (let ((structured-args (process-dbg-obj-args args)))
+      (set! payload (car structured-args))
+      (set! usual (cadr structured-args)))
+    (set! self dispatch-key-val-dbg-obj)
     self)
   
   (define (qualifier)
-    (symbol? key))
-  
+    (define result
+      (and (not (null? payload))
+           (not (null? (cdr payload)))
+           (symbol? (car payload))))
+    (when result
+      (set! key (car payload))
+      (set! val (cadr payload)))
+    result)
+    
   (define (formatter)
     (gentext-format-key-val-pair key val)
     (gentext-newline))
   
-  (define (dbg-key-val-obj? msg)
-    (or 
-     (eq? msg (object-name usual))
-     (eq? (object-name self)
-          'dispatch-dbg-key-val-obj)))
-  
-  (define (dispatch-dbg-key-val-obj msg)
+  (define (dispatch-key-val-dbg-obj msg)
     (case msg
-      ((dbg-key-val-obj?) (dbg-key-val-obj? msg))
+      ((key-val-dbg-obj?) #t)
       ((key) key)
       ((value) val)
       ((qualifier) qualifier)
@@ -84,19 +126,23 @@
                 (let ((handler-instance (handler payload self)))
                   (set! handler-instances 
                         (cons handler-instance handler-instances))
+                  (gentext-println
+                   "Considering: " args " with " handler-instance
+                   " result is: " ((handler-instance 'qualifier)))
                   ((handler-instance 'qualifier))))
               handlers)))
          (selector handler-instances handler-qualification-mask)))))
-    
-  (define (default-selector handlers result-of-evaluating-handler-qualifiers)
+
+  (define (default-selector handlers handler-qualification-mask)
     ;; Choose the first qualifying handler
     (define selected-handler '())
+    (gentext-println handlers " " handler-qualification-mask)
     (map 
      (lambda (handler qualified?)
        (when qualified?
          (set! selected-handler handler)))
      handlers 
-     result-of-evaluating-handler-qualifiers)
+     handler-qualification-mask)
     selected-handler)
   
   (define (selector! new-selector)
@@ -107,12 +153,9 @@
       (error "A debug object handler must be a procedure"))
     (set! handlers (cons handler handlers)))
   
-  (define (dbg-obj?)
-    (eq? (object-name self) 'dispatch-dbg-obj))
-  
   (define (dispatch-dbg-obj msg)
     (case msg
-      ((dbg-obj?) (dbg-obj?))
+      ((dbg-obj?) #t)
       ((payload) payload)
       ((add-handler!) add-handler!)
       ((handler-selector!) selector!)
@@ -137,11 +180,9 @@
     (gentext-start-of-debug-clause context)
     (map
      (lambda (arg)
-       (gentext-println "in cond" args)
        (cond
          ((and (procedure? arg)
                (arg 'dbg-obj?))
-          (gentext-println arg " " (arg 'formatter))
           ((arg 'formatter)))
          (else
           (gentext-println arg))))
@@ -228,7 +269,8 @@
 (set! 
  *dbg-obj-handlers*
  (list 
-  dbg-key-val-obj))
+  key-val-dbg-obj
+  default-dbg-obj))
 
 
 ;; Exported Abstractions
