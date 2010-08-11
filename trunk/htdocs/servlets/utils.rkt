@@ -64,6 +64,46 @@
        (usual msg))))
   (init))
 
+(define (list-proc-dbg-obj . args)
+  (define self '())
+  (define payload '())
+  (define usual '())
+  (define lst '())
+  (define proc '())
+  
+  (define (init)
+    (let ((structured-args (process-dbg-obj-args args)))
+      (set! payload (car structured-args))
+      (set! usual (cadr structured-args)))
+    (set! self dispatch-list-proc-dbg-obj)
+    self)
+  
+  (define (qualifier)
+    (define result
+      (and (not (null? payload))
+           (not (null? (cdr payload)))
+           (list? (car payload))
+           (procedure? (cadr payload))))
+    (when (true? result)
+      (set! lst (car payload))
+      (set! proc (cadr payload)))
+    result)
+    
+  (define (formatter)
+    (gentext-println (map proc lst)))
+  
+  (define (dispatch-list-proc-dbg-obj msg)
+    (case msg
+      ((list-proc-dbg-obj?) #t)
+      ((list) lst)
+      ((proc) proc)
+      ((qualifier) qualifier)
+      ((formatter) formatter)
+      (else
+       (usual msg))))
+  (init))
+
+
 (define (key-val-dbg-obj . args)
   (define self '())
   (define payload '())
@@ -127,11 +167,19 @@
                   (set! handler-instances 
                         (cons handler-instance handler-instances))
                   ((handler-instance 'qualifier))))
-              handlers)))
-         (selector 
-          (reverse handler-instances) 
-          handler-qualification-mask)))))
-
+              handlers))
+            (elected-handler
+             (selector 
+              (reverse handler-instances) 
+              handler-qualification-mask)))
+         (cond 
+           ((and (not (null? elected-handler))
+                 (procedure? elected-handler)
+                 (elected-handler 'dbg-obj?))
+            elected-handler)
+           (else
+            (default-dbg-obj payload self)))))))
+  
   (define (default-selector handlers handler-qualification-mask)
     ;; Choose the first qualifying handler
     (define selected-handler '())
@@ -268,7 +316,7 @@
  *dbg-obj-handlers*
  (list 
   key-val-dbg-obj
-  default-dbg-obj))
+  list-proc-dbg-obj))
 
 
 ;; Exported Abstractions
