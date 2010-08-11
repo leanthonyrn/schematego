@@ -7,7 +7,7 @@
 (define (dbg-obj . args)
   ;; Each debug object handler must extend this abstraction by 
   ;; implementing two messages, i.e. qualifier and formatter. 
-  ;; The handler must return thunks as a response to these messages. 
+  ;; The handler must return a thunk as a response each messages. 
   ;;
   ;; Unknown messages should be delegated back to this abstraction, 
   ;; which is available to specialized debug object handlers as the 
