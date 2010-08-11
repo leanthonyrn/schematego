@@ -147,21 +147,28 @@
   ;; two messages, i.e. qualifier and formatter. The handler must return 
   ;; thunks as a response to these messages. Unknown messages should be
   ;; delegated to this abstraction, which is available to specialized debug
-  ;; object handlers as the second argument, when they are instantiated. The
-  ;; first argument is the payload that is might or might not be supported
-  ;; by each handler.
+  ;; object handlers as the second argument when they are instantiated. The
+  ;; first argument is the payload that might or might not be supported
+  ;; by one or more handlers.
   ;; 
+  ;; In case no handler supports a given payload, a default handler is 
+  ;; pushed to be used for that payload.
+  ;;
   ;; Please use the add-handler! message to add custom handlers. An initial
   ;; list of handlers is provided by the '*dbg-obj-handlers*' global variable.
+  ;; But there's no need to mutate that variable for adding custom handlers.
   ;;
   ;; You could alter the handler election policy --since multiple handlers
   ;; might support a given payload-- by providing a custom selector 
   ;; procedure. A priori, a default is provided by this very abstraction.
-  ;; The selector procedure receives two arguments, (1) a list of 
-  ;; available handlers and (2) a mask list that has as many elements as the
-  ;; first argument. The values in the second argument indicate whether a 
-  ;; particular handler --same position in the first argument-- handles the
-  ;; given payload.
+  ;; The selector procedure receives two arguments:
+  ;;
+  ;; (1) A list of available handlers and,
+  ;; (2) A mask list that has as many elements as the first argument.
+  ;;
+  ;; The values in the second argument indicate whether a particular 
+  ;; handler --same position in the first argument-- handles the
+  ;; payload that's being processed.
   
   (define self '())
   (define handlers '())
