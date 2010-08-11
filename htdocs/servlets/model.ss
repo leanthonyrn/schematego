@@ -1,6 +1,7 @@
 #lang scheme
 
 (require "utils.rkt")
+(require "debugger.rkt")
 
 (define dbg (make-debugger 1))
 
@@ -137,7 +138,12 @@
     self)
   (define (new color name rank position rule)
     (define new-pwn (make-pawn color name rank position rule self))
-    (dbg 'new-meta-pawn (dbg-obj 'test 12) (dbg-obj'pawns 14) pwns)
+    (dbg 
+     'new-meta-pawn 
+     (dbg-obj 
+      pwns 
+      (lambda (pwn)
+        (pwn 'name))))
     (set! pwns (cons new-pwn pwns))
     new-pwn)
   (define (dispatch-meta-pawn msg)
