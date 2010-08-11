@@ -5,26 +5,28 @@
 (define *initial-dbg-obj-handlers* '())
 
 (define (dbg-obj . args)
-  ;; Each debug object handler must extend this abstraction by implementing
-  ;; two messages, i.e. qualifier and formatter. The handler must return 
-  ;; thunks as a response to these messages. Unknown messages should be
-  ;; delegated to this abstraction, which is available to specialized debug
-  ;; object handlers as the second argument when they are instantiated. The
-  ;; first argument is the payload that might or might not be supported
-  ;; by one or more handlers.
+  ;; Each debug object handler must extend this abstraction by 
+  ;; implementing two messages, i.e. qualifier and formatter. 
+  ;; The handler must return thunks as a response to these messages. 
+  ;;
+  ;; Unknown messages should be delegated back to this abstraction, 
+  ;; which is available to specialized debug object handlers as the 
+  ;; second argument when they are instantiated. The first argument 
+  ;; is the payload that might or might not be supported by one or
+  ;; more handlers.
   ;; 
-  ;; In case no handler supports a given payload, a default handler is 
-  ;; pushed to be used for that payload.
+  ;; In case no handler supports a given payload, a default handler 
+  ;; is pushed to be used for that payload.
   ;;
-  ;; Please use the add-handler! message to add custom handlers. An initial
-  ;; list of handlers is provided by the '*initial-dbg-obj-handlers*' 
-  ;; global variable, though there's no need to mutate that variable 
-  ;; in order to add custom handlers.
+  ;; Please use the add-handler! message to add custom handlers. 
+  ;; An initial list of handlers is provided by the global variable,
+  ;; '*initial-dbg-obj-handlers*', though there's no need to mutate 
+  ;; that variable in order to add custom handlers.
   ;;
-  ;; You could alter the handler election policy --since multiple handlers
-  ;; might support a given payload-- by providing a custom selector 
-  ;; procedure. A priori, a default is provided by this very abstraction.
-  ;; The selector procedure receives two arguments:
+  ;; One could alter the handler selection policy --since _multiple_
+  ;; handlers might qualiy for a given payload-- by providing a 
+  ;; custom selector procedure. A priori, there exists a default 
+  ;; selector. The selector procedure receives two arguments:
   ;;
   ;; (1) A list of available handlers and,
   ;; (2) A mask list that has as many elements as the first argument.
