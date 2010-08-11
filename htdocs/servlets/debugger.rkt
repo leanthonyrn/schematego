@@ -120,8 +120,7 @@
      "If any argument is passed to a debug object, "
      "the argument list MUST have the following structure:\n"
      "an instance of dbg-obj-payload as payload, followed by:\n"
-     "an instance of dbg-obj as parent (or usual), followed by:\n"
-     "an instance of continuation? as abort.\n\n"))
+     "an instance of dbg-obj as parent (or usual), followed by:\n"))
   (cond 
     ((and (not (null? args))
           (procedure? (car args))
