@@ -126,20 +126,18 @@
                 (let ((handler-instance (handler payload self)))
                   (set! handler-instances 
                         (cons handler-instance handler-instances))
-                  (gentext-println
-                   "Considering: " args " with " handler-instance
-                   " result is: " ((handler-instance 'qualifier)))
                   ((handler-instance 'qualifier))))
               handlers)))
-         (selector handler-instances handler-qualification-mask)))))
+         (selector 
+          (reverse handler-instances) 
+          handler-qualification-mask)))))
 
   (define (default-selector handlers handler-qualification-mask)
     ;; Choose the first qualifying handler
     (define selected-handler '())
-    (gentext-println handlers " " handler-qualification-mask)
-    (map 
+    (for-each 
      (lambda (handler qualified?)
-       (when qualified?
+       (when (true? qualified?)
          (set! selected-handler handler)))
      handlers 
      handler-qualification-mask)
