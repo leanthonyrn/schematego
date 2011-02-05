@@ -251,17 +251,18 @@
     (set! level new-val))
   
   (define (report context args)
-    (gentext-start-of-debug-clause context)
-    (map
-     (lambda (arg)
-       (cond
-         ((and (procedure? arg)
-               (arg 'dbg-obj?))
-          ((arg 'formatter)))
-         (else
-          (gentext-println arg))))
-     args)
-    (gentext-end-of-debug-clause))
+    (unless (zero? level)
+      (gentext-start-of-debug-clause context)
+      (map
+       (lambda (arg)
+         (cond
+           ((and (procedure? arg)
+                 (arg 'dbg-obj?))
+            ((arg 'formatter)))
+           (else
+            (gentext-println arg))))
+       args)
+      (gentext-end-of-debug-clause)))
   
   (define (dispatch-debug msg . args)
     (case msg
