@@ -44,7 +44,9 @@
   (eq? pred #t))
 (define (false? pred)
   (eq? pred #f))
-  
+
+(define (identity x) x)
+
 (define (inc n)
   (+ n 1))
 (define (dec n)
@@ -61,9 +63,8 @@
 ;; ------------------------------------------------------------------------
 (provide
  vector-map!
- ;make-debugger
- ;dbg-obj
  in-range?
+ identity
  inc
  dec
  true?
@@ -71,5 +72,4 @@
  gentext-format-key-val-pair
  gentext-newline
  gentext-println
- gentext-fancy-line
- )
+ gentext-fancy-line)
