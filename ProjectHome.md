@@ -1,0 +1,1 @@
+As part of the Computer Science curriculum at the Vrije Universiteit Brussel, I have to implement [Stratego](http://en.wikipedia.org/wiki/Stratego) as a Web application using the Scheme programming language.
